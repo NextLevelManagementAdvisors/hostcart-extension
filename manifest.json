@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Hostcart Connector",
+  "short_name": "Hostcart",
+  "version": "0.1.0",
+  "description": "Connects your Instacart and Turno accounts to Hostcart for automated restocking of your short-term rental properties.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "cookies",
+    "storage",
+    "notifications",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://*.instacart.com/*",
+    "https://app.turnoverbnb.com/*",
+    "https://hostcart.nlma.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.instacart.com/*"],
+      "js": ["content-instacart.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://app.turnoverbnb.com/*"],
+      "js": ["content-turno.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Hostcart Connector",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
