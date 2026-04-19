@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Welcome to Hostcart Connector</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: 15px;
+    margin: 0;
+    padding: 40px 24px;
+    color: #1e293b;
+    background: #f8fafc;
+  }
+  main { max-width: 600px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  .lead { color: #475569; margin-bottom: 24px; }
+  ol { padding-left: 20px; }
+  li { margin-bottom: 16px; line-height: 1.5; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  a { color: #0f172a; font-weight: 500; }
+  .pair-box {
+    margin-top: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+  .pair-box h2 { font-size: 16px; margin: 0 0 12px; }
+  .pair-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 20px;
+    letter-spacing: 4px;
+    text-align: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-family: monospace;
+    box-sizing: border-box;
+  }
+  button {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: #0f172a;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  button:hover { background: #1e293b; }
+  .result { margin-top: 12px; font-size: 14px; }
+  .result.ok { color: #16a34a; }
+  .result.err { color: #dc2626; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Welcome to Hostcart Connector</h1>
+  <p class="lead">
+    Hostcart automates restocking for your short-term rental properties. This extension keeps
+    your Instacart and Turno connections alive so you don't have to log back in every week.
+  </p>
+
+  <ol>
+    <li>
+      Open <a href="https://hostcart.nlma.io/settings/extension" target="_blank">hostcart.nlma.io/settings/extension</a>
+      in a new tab and generate a 6-digit pairing code.
+    </li>
+    <li>Paste the code below and click <strong>Connect</strong>.</li>
+    <li>Log into <a href="https://www.instacart.com/" target="_blank">Instacart</a> normally in any tab — the extension captures your session automatically.</li>
+    <li>Log into <a href="https://app.turnoverbnb.com/" target="_blank">Turno</a> normally in any tab — same auto-capture.</li>
+    <li>Close this tab. You're done.</li>
+  </ol>
+
+  <div class="pair-box">
+    <h2>Enter pairing code</h2>
+    <input class="pair-input" id="pairInput" placeholder="000000" maxlength="6" inputmode="numeric" autofocus>
+    <button id="pairBtn">Connect</button>
+    <div class="result" id="result"></div>
+  </div>
+</main>
+<script src="onboarding.js"></script>
+</body>
+</html>

@@ -83,6 +83,12 @@ chrome.cookies.onChanged.addListener(async (info) => {
   if (cookieString) await postSession(service, cookieString);
 });
 
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("onboarding.html") });
+  }
+});
+
 chrome.alarms.create("heartbeat", { periodInMinutes: 360 });
 chrome.alarms.create("reauthCheck", { periodInMinutes: 60 * 6 });
 
