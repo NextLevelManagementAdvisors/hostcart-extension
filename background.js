@@ -91,11 +91,74 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.alarms.create("heartbeat", { periodInMinutes: 360 });
 chrome.alarms.create("reauthCheck", { periodInMinutes: 60 * 6 });
+// Wake the service worker frequently to poll for Instacart proxy work. 1min
+// is the MV3 alarm minimum; between wakes the long-poll holds the fetch open
+// for up to 25s which keeps the worker alive during active traffic.
+chrome.alarms.create("instacartProxy", { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "heartbeat") await runHeartbeat();
   else if (alarm.name === "reauthCheck") await runReauthCheck();
+  else if (alarm.name === "instacartProxy") await runInstacartProxyOnce();
 });
+
+// Also kick it off at startup so we don't wait up to a minute after install.
+runInstacartProxyOnce().catch(() => {});
+
+/**
+ * Poll the Hostcart server for Instacart requests that need to be executed
+ * from real Chrome (CloudFront WAF blocks server-side fetches). Does up to
+ * a couple of jobs per wake, then exits — the 1min alarm picks up the next
+ * batch. Long-poll on the server side (25s) keeps the SW alive during
+ * active usage.
+ */
+async function runInstacartProxyOnce() {
+  const pairing = await getPairing();
+  if (!pairing?.extensionToken) return;
+
+  for (let i = 0; i < 3; i++) {
+    let job;
+    try {
+      const res = await fetch(`${HOSTCART_API}/api/sessions/instacart-proxy-poll`, {
+        headers: { "x-extension-token": pairing.extensionToken },
+      });
+      if (res.status === 204) return; // idle — nothing to do
+      if (!res.ok) return;
+      job = await res.json();
+    } catch {
+      return;
+    }
+    if (!job || !job.requestId) return;
+
+    let result;
+    try {
+      const fetchRes = await fetch(job.url, {
+        method: job.method || "GET",
+        headers: job.headers || {},
+        body: job.body || undefined,
+        credentials: "include",
+      });
+      const body = await fetchRes.text();
+      result = { status: fetchRes.status, body };
+    } catch (err) {
+      result = { status: 0, body: String(err?.message ?? err) };
+    }
+
+    try {
+      await fetch(`${HOSTCART_API}/api/sessions/instacart-proxy-result`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-extension-token": pairing.extensionToken,
+        },
+        body: JSON.stringify({ requestId: job.requestId, ...result }),
+      });
+    } catch {
+      // If result POST fails the server will time out the pending request
+      // — caller retries on next cron cycle. No local state to clean up.
+    }
+  }
+}
 
 async function runHeartbeat() {
   for (const service of Object.values(SERVICES)) {
