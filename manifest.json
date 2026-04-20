@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Hostcart Connector",
   "short_name": "Hostcart",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Connects your Instacart and Turno accounts to Hostcart for automated restocking of your short-term rental properties.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -29,6 +29,15 @@
     {
       "matches": ["https://app.turnoverbnb.com/*"],
       "js": ["content-turno.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://hostcart.nlma.io/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "js": ["content-hostcart.js"],
       "run_at": "document_idle"
     }
   ],
