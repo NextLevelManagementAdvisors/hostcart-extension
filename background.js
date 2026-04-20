@@ -107,28 +107,43 @@ runInstacartProxyOnce().catch(() => {});
 
 /**
  * Poll the Hostcart server for Instacart requests that need to be executed
- * from real Chrome (CloudFront WAF blocks server-side fetches). Does up to
- * a couple of jobs per wake, then exits — the 1min alarm picks up the next
- * batch. Long-poll on the server side (25s) keeps the SW alive during
- * active usage.
+ * from real Chrome (CloudFront WAF blocks server-side fetches). Continuous
+ * long-poll loop: the server's /instacart-proxy-poll holds each request for
+ * up to 25s, so there's always an in-flight fetch keeping the MV3 service
+ * worker alive. When a network error breaks the loop, the 1min alarm
+ * watchdog restarts it.
  */
-async function runInstacartProxyOnce() {
-  const pairing = await getPairing();
-  if (!pairing?.extensionToken) return;
+let proxyLoopRunning = false;
 
-  for (let i = 0; i < 3; i++) {
+async function runInstacartProxyOnce() {
+  if (proxyLoopRunning) return;
+  proxyLoopRunning = true;
+  try {
+    await proxyLoopForever();
+  } finally {
+    proxyLoopRunning = false;
+  }
+}
+
+async function proxyLoopForever() {
+  while (true) {
+    const pairing = await getPairing();
+    if (!pairing?.extensionToken) return;
+
     let job;
     try {
       const res = await fetch(`${HOSTCART_API}/api/sessions/instacart-proxy-poll`, {
         headers: { "x-extension-token": pairing.extensionToken },
       });
-      if (res.status === 204) return; // idle — nothing to do
-      if (!res.ok) return;
+      if (res.status === 204) continue; // idle slot, re-poll immediately
+      if (res.status === 401) return; // unpaired
+      if (!res.ok) return; // transient server error — let alarm retry
       job = await res.json();
     } catch {
-      return;
+      return; // network blip — alarm restart
     }
-    if (!job || !job.requestId) return;
+
+    if (!job || !job.requestId) continue;
 
     let result;
     try {
@@ -154,8 +169,8 @@ async function runInstacartProxyOnce() {
         body: JSON.stringify({ requestId: job.requestId, ...result }),
       });
     } catch {
-      // If result POST fails the server will time out the pending request
-      // — caller retries on next cron cycle. No local state to clean up.
+      // Best-effort. If we can't post the result, server times the pending
+      // request out in 60s and the caller retries.
     }
   }
 }
